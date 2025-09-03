@@ -17,9 +17,8 @@ import toml
 ############################# INITIATE CLIENTS AND FUNCTIONS #############################
 
 # Initialize Gemini client
-config = toml.load("secrets.toml")
-client = genai.Client(api_key=config["genai"]["api_key"])
-vo = voyageai.Client(api_key=config["voyageai"]["api_key"])
+client = genai.Client(api_key=st.secrets["genai"]["api_key"])
+vo = voyageai.Client(api_key=st.secrets["voyageai"]["api_key"])
 
 # Load the item correspondance data from a file 
 with open('Data_Dictionary_Updated.json', 'r') as f:
