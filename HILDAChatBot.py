@@ -16,6 +16,39 @@ import toml
 
 ############################# INITIATE CLIENTS AND FUNCTIONS #############################
 
+# Custom CSS for styling
+st.markdown("""
+<style>
+.current-bot-literature {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 10px;
+    border-radius: 5px;
+    border-left: 4px solid #28a745;
+    margin: 10px 0;
+}
+
+.current-bot-methodology {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    padding: 10px;
+    border-radius: 5px;
+    border-left: 4px solid #17a2b8;
+    margin: 10px 0;
+}
+
+.current-bot-variable {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 10px;
+    border-radius: 5px;
+    border-left: 4px solid #ffc107;
+    margin: 10px 0;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 # Initialize Gemini client
 client = genai.Client(api_key=st.secrets["genai"]["api_key"])
 vo = voyageai.Client(api_key=st.secrets["voyageai"]["api_key"])
@@ -1113,9 +1146,14 @@ with st.sidebar:
    
     st.divider()
    
-    # Display current bot
-    st.info(f"Currently chatting with: **{st.session_state.current_bot}**")
-   
+    # Display current bot with custom styling
+    if st.session_state.current_bot == "Literature":
+        st.markdown(f'<div class="current-bot-literature">Currently chatting with: 📚 <strong>{st.session_state.current_bot}</strong></div>', unsafe_allow_html=True)
+    elif st.session_state.current_bot == "Methodology":
+        st.markdown(f'<div class="current-bot-methodology">Currently chatting with: 🔬 <strong>{st.session_state.current_bot}</strong></div>', unsafe_allow_html=True)
+    elif st.session_state.current_bot == "Variable Selection":
+        st.markdown(f'<div class="current-bot-variable">Currently chatting with: 📊 <strong>{st.session_state.current_bot}</strong></div>', unsafe_allow_html=True)
+
     # Clear chat history button
     if st.button("🗑️ Clear Chat History", use_container_width=True):
         st.session_state.messages = []
