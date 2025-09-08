@@ -1135,12 +1135,22 @@ if st.session_state.show_preface and len(st.session_state.messages) == 0:
     **How to use this application:**
 
     1. **Select an AI Specialization** from the sidebar on the left. The **Literature** bot is selected by default.
-    2. **Literature**: Ask research questions to find relevant academic papers that use the HILDA Survey.
-    3. **Methodology**: Discuss the research methods and approaches relevant to your question.
-    4. **Search Variables**: Identify and refine the key variables related to your research.
+    2. **Literature**: Ask research questions to find relevant academic papers that use the HILDA Survey. Here are some example questions to get you started:
+        - Does education affect income inequality?
+        - How does income influence mental health?
+        - What is the impact of housing affordability on family well-being?
+    3. **Methodology**: Discuss the methods and approaches relevant to your research questions. Some example questions include:
+        - What weghting method should I use for my analysis?
+        - How is the income variable crafted?
+        - Can you explain the sampling design of the HILDA Survey?
+    4. **Search Variables**: Identify and refine the key variables related to your research. Feel feel to ask broad or specific queries, such as:
+        - Which variables are relevant for studying the impact of education on employment outcomes?
+        - Mental health
+        - Income inequality
+        - Income effect on family well-being
     5. **Switch bots** or **clear the chat history** at any time using the sidebar controls.
 
-    **Note**: I'm a Question and Answering Bot, not a chat bot! That means I'm designed not to remember past interactions. 
+    **Note**: I'm a Question and Answering Bot, not a Chat Bot! That means I'm designed not to remember past interactions. 
     This helps me stay accurate and focused on the current context, but do feel free to add details from our previous conversations if you think it will help.
 
     ---
@@ -1218,7 +1228,7 @@ for message in st.session_state.messages:
                             st.warning(f"Relevance: {relevance}")
       
 # Chat input
-if prompt := st.chat_input("Type your research question..."):
+if prompt := st.chat_input("Type your question..."):
     # Hide preface once user sends first message
     st.session_state.show_preface = False
    
