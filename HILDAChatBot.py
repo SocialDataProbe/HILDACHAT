@@ -807,7 +807,7 @@ This category asks about significant events that have occurred in the past year 
 This category collects retrospective data on various aspects of the respondent's labor force status in years when they were not interviewed, including duration of employment and unemployment (in weeks or months), whether they were employed at any point in the year, and whether they actively sought work while unemployed.
 
 ## LO: Life opinions
-This category explores the respondent's opinions about various aspects of life, including their satisfaction with and importance of aspects such as their overall life, financial situation, health, relationships, employment opportunities, housing, leisure, community, safety, and potentially their national context.
+This category explores the respondent's opinions about various aspects of life, including their satisfaction with and importance of aspects such as their overall life, financial situation, health, relationships, employment opportunities, housing, leisure, community, and safety.
 This category also explores the respondent's attitudes and values regarding gender roles, work-life balance, childcare, and the importance of a paying job. The questions use a Likert scale to gauge agreement or disagreement with statements related to these topics.
 This category also focuses on the respondent's attitudes towards marriage, cohabitation, divorce, having children, diverse family structures (including same-sex relationships and single parenting), gender roles within families, and aspects of the family life cycle.**
 
@@ -1113,6 +1113,27 @@ def variable_selection(question, variables):
     Whatever the income variable choice is, please remind the user that subtraction of the negative income variable from the positive income variable gives the full distribution of that income variable. Remember to emphasize the subtraction.                                            
 
     Finally, always list multiple relevant variables for the user in your final response and let them decide which is most is most relevant.
+                                                  
+    # Formatting 
+    Please report all relevant variables using the following consistent format.
+    Repeat the entire structure (from the variable name heading to the Waves bullet point) for every variable you chose.
+                                                  
+    *[Variable Name]*: [Brief Description/Source of Variable]
+
+    Categories:
+
+        [Value/Label 1]: [Description]
+
+        [Value/Label 2]: [Description]
+
+        [Value/Label 3]: [Description]
+
+        [Continue listing categories as needed...]
+
+    Relevance: [Brief explanation of what this variable is used for, why it's important, and which values/labels might be of particular focus for a specific analysis.]
+
+    Waves: [Range of waves/data points the variable is available for, e.g., 1-23 (available for all waves), 10-15 only, etc.]
+                                                                                                    
     """)
     return variable_selection_template.replace("{{QUESTION}}", question).replace("{{VARIABLES}}", variables)
 
@@ -1178,7 +1199,7 @@ if st.session_state.show_preface and len(st.session_state.messages) == 0:
         - How does income influence mental health?
         - What is the impact of housing affordability on family well-being?
     3. **Methodology**: Discuss the methods and approaches relevant to your research questions. Some example questions include:
-        - What weghting method should I use for my analysis?
+        - What weighting method should I use for my analysis?
         - How is the income variable crafted?
         - Can you explain the sampling design of the HILDA Survey?
     4. **Search Variables**: Identify and refine the key variables related to your research. Feel feel to ask broad or specific queries, such as:
