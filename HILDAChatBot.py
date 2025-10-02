@@ -1128,7 +1128,7 @@ def variable_selection(question, variables):
 
         [Value/Label 3]: [Description]
 
-        [Continue listing categories as needed...]
+        [Continue listing categories as needed...] 
 
     Relevance: [Brief explanation of what this variable is used for, why it's important, and which values/labels might be of particular focus for a specific analysis.]
 
