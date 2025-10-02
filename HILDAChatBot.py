@@ -1118,21 +1118,23 @@ def variable_selection(question, variables):
     Please report all relevant variables using the following consistent format.
     Repeat the entire structure (from the variable name heading to the Waves bullet point) for every variable you chose.
                                                   
-    *[Variable Name]*: [Brief Description/Source of Variable]
+    ---
+    ***
 
-    Categories:
+    ## `[Variable Name]`
+    [Brief Description/Source of Variable]
 
-        [Value/Label 1]: [Description]
+    ---
 
-        [Value/Label 2]: [Description]
+    **Categories:**
+    *   **[Value/Label 1]:** [Description]
+    *   **[Value/Label 2]:** [Description]
+    *   **[Value/Label 3]:** [Description]
+    *   *[Continue listing categories as needed...]*
 
-        [Value/Label 3]: [Description]
+    **Relevance:** [Brief explanation of what this variable is used for, why it's important, and which values/labels might be of particular focus for a specific analysis.]
 
-        [Continue listing categories as needed...] 
-
-    Relevance: [Brief explanation of what this variable is used for, why it's important, and which values/labels might be of particular focus for a specific analysis.]
-
-    Waves: [Range of waves/data points the variable is available for, e.g., 1-23 (available for all waves), 10-15 only, etc.]
+    **Waves:** [Range of waves/data points the variable is available for, e.g., 1-23 (available for all waves), 10-15 only, etc.]
                                                                                                     
     """)
     return variable_selection_template.replace("{{QUESTION}}", question).replace("{{VARIABLES}}", variables)
