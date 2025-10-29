@@ -101,6 +101,27 @@ def get_original_user_query():
             return message["content"]
     return None # Return None if no user message is found
 
+def fix_encoding(text):
+    """Fix common UTF-8 encoding corruptions in text."""
+    if not isinstance(text, str):
+        return text
+    
+    replacements = {
+        'â€˜': "'",  # opening single quote
+        'â€™': "'",  # closing single quote/apostrophe
+        'â€œ': '"',  # opening double quote
+        'â€�': '"',  # closing double quote
+        'â€"': '—',  # em dash
+        'â€"': '–',  # en dash
+        'Ã©': 'é',  # e with acute
+        'Ã¨': 'è',  # e with grave
+        'Ã ': 'à',  # a with grave
+    }
+    
+    for corrupted, correct in replacements.items():
+        text = text.replace(corrupted, correct)
+    
+    return text
 ################################# Search Functions ################################
 
 
@@ -1309,8 +1330,11 @@ if prompt := st.chat_input("Type your question..."):
             title_to_doc_id_map = {doc['metadata']['title']: doc['doc_id'] for doc in top_docs}
 
             # Create reference mapping
-            title_to_reference_map = {doc['metadata']['title']: doc['metadata'].get('reference', 'Reference not available') for doc in top_docs}
-            
+            title_to_reference_map = {
+                doc['metadata']['title']: fix_encoding(doc['metadata'].get('reference', 'Reference not available')) 
+                for doc in top_docs
+            }         
+               
             response_text = generate_response(formatted_prompt)
             response_data = extract_json_from_response(response_text)
             
