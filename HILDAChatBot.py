@@ -410,6 +410,7 @@ def extract_top_abstracts_for_lit_prompt(results, question, top_n=60):
         metadata = doc["metadata"]
         title = metadata.get("title", "Title not available")
         abstract = metadata.get("abstract", "Abstract not available")
+        reference = metadata.get("reference", "Reference not available")
         
         # Format each abstract with title and abstract text
         abstract_entry = f"""### Abstract {i}
@@ -1281,6 +1282,7 @@ for message in st.session_state.messages:
                         st.write("**Research Question:**", summary.get('research_question', 'Not specified'))
                         st.write("**Methodology:**", summary.get('methodology', 'Not specified'))
                         st.write("**Main Findings:**", summary.get('main_findings', 'Not specified'))
+                        st.write("**Reference:**", paper.get('reference', 'Reference not available'))
                         
                         relevance = paper.get('relevance', 'Unknown')
                         if relevance.lower() == 'relevant':
@@ -1305,6 +1307,9 @@ if prompt := st.chat_input("Type your question..."):
             
             # Create a map to link titles back to doc_ids
             title_to_doc_id_map = {doc['metadata']['title']: doc['doc_id'] for doc in top_docs}
+
+            # Create reference mapping
+            title_to_reference_map = {doc['metadata']['title']: doc['metadata'].get('reference', 'Reference not available') for doc in top_docs}
             
             response_text = generate_response(formatted_prompt)
             response_data = extract_json_from_response(response_text)
@@ -1312,6 +1317,7 @@ if prompt := st.chat_input("Type your question..."):
             # Augment the response with the doc_id for future reference
             for paper in response_data:
                 paper['doc_id'] = title_to_doc_id_map.get(paper.get('title'))
+                paper['reference'] = title_to_reference_map.get(paper.get('title'), 'Reference not available')
             
             # Generate unique message ID
             message_id = str(uuid.uuid4())
