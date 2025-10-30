@@ -131,6 +131,65 @@ def fix_encoding(text):
         text = text.replace(corrupted, correct)
     
     return text
+
+################################################ Fork Functions ################################################
+
+def fork(question):
+    fork_template = textwrap.dedent("""                                      
+    The user will ask a question relating to HILDA and research articles that use HILDA.
+    
+    The Household, Income and Labour Dynamics in Australia (HILDA) Survey is a 
+    household-based longitudinal study that collects valuable information about economic
+    and personal well-being, labour market dynamics and family life.
+
+    The Household, Income and Labour Dynamics in Australia (HILDA) Survey is a household-based
+    longitudinal study that collects valuable information about economic and personal wellbeing, labour
+    market dynamics and family life. It aims to tell the stories of the same group of Australians 
+    over the course of their lives.
+
+    Started in 2001, the HILDA Survey provides policy-makers with unique insights about Australia,
+    enabling them to make informed decisions across a range of policy areas, including health, education
+    and social services.   
+
+    Your task is to classify the question into one of the following categories:
+    <categories>
+    <category> 
+        <label>Literature</label>
+        <content> A question can be classified as academic literature related if it specifically addresses or inquires about scholarly works, academic publications, research papers, academic journals, or is a research question. Key identifiers include references to peer-reviewed materials, citations, research methodologies, specific academic publications, or simply phrased as a general research question.
+        </content> 
+    </category> 
+    <category> 
+        <label>Methodology</label> 
+        <content> A question can be classified as HILDA methodology-related if it addresses key aspects of the survey's technical and procedural framework, though some specialized elements like the Skirmish and Dress Rehearsal pilot testing, PanelWhiz Stata/SE Add-On scripts, and Cross-National Equivalent File (CNEF) harmonization create unique classification challenges. The classification spans six main domains: sample design and following rules (including population representation and sample member types); data collection processes (covering questionnaire types and fieldwork procedures); data management structures (including file organization and naming conventions); derived variable methodology (addressing variable construction and documentation); data quality considerations (covering representativeness and missing data handling); and technical analysis procedures (including software usage and weight applications). Edge cases include questions about religious classification variables, cognitive ability tasks, death index matching, and incentive payment methods which don't clearly align with these domains despite being part of HILDA's methodology. Additionally, specialized elements like the SF-36 and SF-6D health surveys, the Big Five personality model implementation, and the relationship between temporary and continuing sample members create classification ambiguity. To be classified as methodology-related, questions must specifically address how HILDA operates rather than just requesting data analysis from the survey, though this distinction becomes blurred when dealing with hybrid queries that touch on both methodological processes and analytical outcomes.
+        </content> 
+    </category>   
+    <category> 
+        <label>Variable</label> 
+        <content> A question can be classified as variable related if the user's question seeks to identify relevant HILDA variables within the HILDA dataset. These types of questions often directly refer to data items/variables or ask whether the variable exists within the HILDA dataset. 
+        </content> 
+    </category>                                       
+    </categories>
+                                                                                       
+    Here is user's question:
+    <question>
+        {{QUESTION}}
+    </question>
+                                    
+    An edge case you need to be aware of as it might be difficult to classify.
+    If the user ask a question relating to how a variable is created, 
+    then the correct label is methodolgy and not variable.
+                                            
+    At the end of your response, wrap your final answer in <category> tags: 
+        <category>The category label, and only the category label, goes here</category>                                           
+    """)
+    return fork_template.replace("{{QUESTION}}", question)
+
+def extract_category(response_text):
+    """Helper function to parse category from model response"""
+    match = re.search(r'<category>(.*?)</category>', response_text, re.DOTALL)
+    return match.group(1).strip() if match else None
+
+
 ################################# Search Functions ################################
 
 
@@ -1230,7 +1289,7 @@ if st.session_state.show_preface and len(st.session_state.messages) == 0:
    
     **How to use this application:**
 
-    1. **Select an AI Specialization** from the sidebar on the left. The **Literature** bot is selected by default.
+    1. **Select an AI Specialization** from the sidebar on the left. The **Any/All** bot is selected by default and will automatically detect the best specialization for your question.
     2. **Literature**: Ask research questions to find relevant academic papers that use the HILDA Survey. Here are some example questions to get you started:
         - Does education affect income inequality?
         - How does income influence mental health?
@@ -1239,7 +1298,7 @@ if st.session_state.show_preface and len(st.session_state.messages) == 0:
         - What weighting method should I use for my analysis?
         - How is the income variable crafted?
         - Can you explain the sampling design of the HILDA Survey?
-    4. **Search Variables**: Identify and refine the key variables related to your research. Feel feel to ask broad or specific queries, such as:
+    4. **Variable Selection**: Identify and refine the key variables related to your research. Feel free to ask broad or specific queries, such as:
         - Which variables are relevant for studying the impact of education on employment outcomes?
         - Mental health
         - Income inequality
@@ -1289,6 +1348,125 @@ def get_all_displayed_doc_ids():
                     doc_ids.add(paper['doc_id'])
     return doc_ids
 
+def process_by_category(prompt, category):
+    """
+    Process the prompt according to the detected or selected category.
+    
+    Args:
+        prompt: The user's question
+        category: Either "Literature", "Methodology", or "Variable"
+    
+    Returns:
+        A dictionary representing the message to add to chat history
+    """
+    
+    if category == "Literature":
+        # Literature handling flow
+        results = process_literature_search(prompt)
+        
+        if results:
+            formatted_prompt, top_docs = extract_top_abstracts_for_lit_prompt(results, prompt)
+            
+            # Create a map to link titles back to doc_ids
+            title_to_doc_id_map = {doc['metadata']['title']: doc['doc_id'] for doc in top_docs}
+
+            # Create reference mapping
+            title_to_reference_map = {
+                doc['metadata']['title']: fix_encoding(doc['metadata'].get('reference', 'Reference not available')) 
+                for doc in top_docs
+            }         
+
+            response_text = generate_response(formatted_prompt)
+            response_data = extract_json_from_response(response_text)
+            
+            # Augment the response with the doc_id for future reference
+            for paper in response_data:
+                paper['doc_id'] = title_to_doc_id_map.get(paper.get('title'))
+                paper['reference'] = title_to_reference_map.get(paper.get('title'), 'Reference not available')
+            
+            # Generate unique message ID
+            message_id = str(uuid.uuid4())
+            
+            # Return literature response dictionary
+            return {
+                "role": "assistant",
+                "content": "", # The content is rendered customly
+                "is_literature_response": True,
+                "literature_data": response_data,
+                "message_id": message_id
+            }
+        else:
+            return {
+                "role": "assistant",
+                "content": "I encountered an issue processing your literature search. Please try again."
+            }
+    
+    elif category == "Methodology":
+        # Methodology handling flow
+        chapter_prompt = manual_review(prompt, chapter_summary)
+        chap_response = generate_response(chapter_prompt)  # Replace with your model call
+
+        category_match = re.search(r'<category>(\d+)</category>', chap_response)
+        category_number = category_match.group(1) if category_match else "0"
+       
+        relevant_chapter = generate_document_prompt(category_number)
+        review_prompt = chapter_review(prompt, relevant_chapter)
+        final_response = generate_response(review_prompt)  # Replace with your model call
+       
+        # Return methodology response dictionary
+        return {
+            "role": "assistant",
+            "content": final_response
+        }
+    
+    elif category == "Variable":
+        # Variable Selection handling flow
+        try:
+            categories_prompt = categories_review(prompt, categories_summary)
+            categories_response = generate_response(categories_prompt)
+            
+            # Clean and parse the response
+            clean_string = categories_response.strip("` \npython")
+            python_list = ast.literal_eval(clean_string)
+            print(python_list)
+
+            # Filter the JSON data to keep only keys with abbreviations in the list and remove unwanted fields
+            excluded_fields = ["population", "constructed_from", "construction_contributes", "notes", "subject_category", "dataset"]
+
+            filtered_data = {
+                key: [
+                    {k: v for k, v in variable.items() if k not in excluded_fields}
+                    for variable in value
+                ]
+                for key, value in json_data.items()
+                if key.split(':', 1)[0].strip() in python_list
+            }
+            # Serialize filtered_data to a formatted JSON string
+            variables_str = json.dumps(filtered_data, indent=4)
+            
+            # Use the JSON string in your template
+            variable_output = variable_selection(
+                question=prompt,
+                variables=variables_str
+            )
+            
+            responsefinalcat = generate_response(variable_output)  # Replace with your model call
+            
+            # Return variable selection response dictionary
+            return {
+                "role": "assistant",
+                "content": responsefinalcat
+            }
+            
+        except Exception as e:
+            return {
+                "role": "assistant",
+                "content": f"I encountered an issue processing your variable selection request: {str(e)}"
+            }
+    
+    # If category doesn't match anything
+    return None
+
 # Display chat messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
@@ -1332,119 +1510,34 @@ if prompt := st.chat_input("Type your question..."):
     # Add user message
     st.session_state.messages.append({"role": "user", "content": prompt})
     
-    # Process based on current bot
-    if st.session_state.current_bot == "Literature":
-        results = process_literature_search(prompt)
-        
-        if results:
-            formatted_prompt, top_docs = extract_top_abstracts_for_lit_prompt(results, prompt)
+    # Determine which category to use
+    if st.session_state.current_bot == "Any/All":
+        # User selected "Any/All", so we need to figure out the category
+        with st.spinner("Analyzing your question..."):
+            fork_prompt = fork(prompt)
+            fork_response = generate_response(fork_prompt)
+            category = extract_category(fork_response)
             
-            # Create a map to link titles back to doc_ids
-            title_to_doc_id_map = {doc['metadata']['title']: doc['doc_id'] for doc in top_docs}
-
-            # Create reference mapping
-            title_to_reference_map = {
-                doc['metadata']['title']: fix_encoding(doc['metadata'].get('reference', 'Reference not available')) 
-                for doc in top_docs
-            }         
-
-            response_text = generate_response(formatted_prompt)
-            response_data = extract_json_from_response(response_text)
-            
-            # Augment the response with the doc_id for future reference
-            for paper in response_data:
-                paper['doc_id'] = title_to_doc_id_map.get(paper.get('title'))
-                paper['reference'] = title_to_reference_map.get(paper.get('title'), 'Reference not available')
-            
-            # Generate unique message ID
-            message_id = str(uuid.uuid4())
-            
-            # Add literature response to history
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": "", # The content is rendered customly
-                "is_literature_response": True,
-                "literature_data": response_data,
-                "message_id": message_id
-            })
-        else:
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": "I encountered an issue processing your literature search. Please try again."
-            })
-    
-    elif st.session_state.current_bot == "Methodology":
-        # Methodology handling flow
-        with st.spinner("Processing methodology request..."):
-                # You'll need to implement these functions or import them
-                chapter_prompt = manual_review(prompt, chapter_summary)
-                chap_response = generate_response(chapter_prompt)  # Replace with your model call
-
-                category_match = re.search(r'<category>(\d+)</category>', chap_response)
-                category_number = category_match.group(1) if category_match else "0"
-               
-                relevant_chapter = generate_document_prompt(category_number)
-                review_prompt = chapter_review(prompt, relevant_chapter)
-                final_response = generate_response(review_prompt)  # Replace with your model call
-               
-                # Add methodology response to history
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": final_response
-                })
-
-    elif st.session_state.current_bot == "Variable Selection":
-        # Variable Selection handling flow
-        with st.spinner("Processing variable selection request..."):
-            try:
-                
-                categories_prompt = categories_review(prompt, categories_summary)
-                categories_response = generate_response(categories_prompt)
-                
-                # Clean and parse the response
-                clean_string = categories_response.strip("` \npython")
-                python_list = ast.literal_eval(clean_string)
-                print(python_list)
-
-                # Filter the JSON data to keep only keys with abbreviations in the list and remove unwanted fields
-                excluded_fields = ["population", "constructed_from", "construction_contributes", "notes", "subject_category", "dataset"]
-
-                filtered_data = {
-                    key: [
-                        {k: v for k, v in variable.items() if k not in excluded_fields}
-                        for variable in value
-                    ]
-                    for key, value in json_data.items()
-                    if key.split(':', 1)[0].strip() in python_list
-}
-                # Serialize filtered_data to a formatted JSON string
-                variables_str = json.dumps(filtered_data, indent=4)
-                
-                # Use the JSON string in your template
-                variable_output = variable_selection(
-                    question=prompt,
-                    variables=variables_str
-                )
-                
-                responsefinalcat = generate_response(variable_output)  # Replace with your model call
-                
-                # Add variable selection response to history
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": responsefinalcat
-                })
-                
-            except Exception as e:
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": f"I encountered an issue processing your variable selection request: {str(e)}"
-                })
-
+            # Optional: Show user which category was detected (uncomment if desired)
+            if category:
+                st.info(f"Detected category: {category}")
     else:
-        # Generic response for other bots (Variable Selection, Data Analyst)
-        with st.spinner("Thinking..."):
-            response = f"Sorry there was an issue and I couldn't process your request."
-            st.session_state.messages.append({"role": "assistant", "content": response})
-
+        # User selected a specific bot, so use that directly
+        category = st.session_state.current_bot
+    
+    # Process the prompt using the determined category
+    with st.spinner("Processing your request..."):
+        message = process_by_category(prompt, category)
+    
+    # Add the response to chat history
+    if message:
+        st.session_state.messages.append(message)
+    else:
+        # This happens if category was unrecognized
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": "I couldn't determine how to process your request. Please try selecting a specific specialization or rephrasing your question."
+        })
+    
     # Rerun to display the new message
     st.rerun()
