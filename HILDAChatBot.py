@@ -45,6 +45,15 @@ st.markdown("""
     border-left: 4px solid #ffc107;
     margin: 10px 0;
 }
+            
+.current-bot-anyall {
+    background-color: #e7e7ff;
+    color: #3d3d99;
+    padding: 10px;
+    border-radius: 5px;
+    border-left: 4px solid #6366f1;
+    margin: 10px 0;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -1169,7 +1178,7 @@ def variable_selection(question, variables):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "current_bot" not in st.session_state:
-    st.session_state.current_bot = "Literature"
+    st.session_state.current_bot = "Any/All"
 if "show_preface" not in st.session_state:
     st.session_state.show_preface = True
 if "selected_papers" not in st.session_state:
@@ -1181,6 +1190,8 @@ if "selected_variables" not in st.session_state:
 with st.sidebar:
     st.header("Specializations")
     # Bot selection buttons
+    if st.button("🌐 Any/All", use_container_width=True):
+        st.session_state.current_bot = "Any/All"
     if st.button("📚 Literature", use_container_width=True):
         st.session_state.current_bot = "Literature"
     if st.button("🔬 Methodology", use_container_width=True):
@@ -1192,7 +1203,9 @@ with st.sidebar:
     st.divider()
    
     # Display current bot with custom styling
-    if st.session_state.current_bot == "Literature":
+    if st.session_state.current_bot == "Any/All":
+        st.markdown(f'<div class="current-bot-anyall">Currently chatting with: 🌐 <strong>{st.session_state.current_bot}</strong></div>', unsafe_allow_html=True)
+    elif st.session_state.current_bot == "Literature":
         st.markdown(f'<div class="current-bot-literature">Currently chatting with: 📚 <strong>{st.session_state.current_bot}</strong></div>', unsafe_allow_html=True)
     elif st.session_state.current_bot == "Methodology":
         st.markdown(f'<div class="current-bot-methodology">Currently chatting with: 🔬 <strong>{st.session_state.current_bot}</strong></div>', unsafe_allow_html=True)
@@ -1334,7 +1347,7 @@ if prompt := st.chat_input("Type your question..."):
                 doc['metadata']['title']: fix_encoding(doc['metadata'].get('reference', 'Reference not available')) 
                 for doc in top_docs
             }         
-               
+
             response_text = generate_response(formatted_prompt)
             response_data = extract_json_from_response(response_text)
             
