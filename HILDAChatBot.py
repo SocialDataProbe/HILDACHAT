@@ -1309,6 +1309,29 @@ with st.sidebar:
         st.session_state.show_preface = True
         st.session_state.selected_variables = []
         st.rerun()
+    
+    # NEW: Variable Details Section
+    st.divider()
+    st.header("📋 Variable Details")
+    
+    # Collect all matched variables from chat history
+    all_matched_variables = {}
+    for message in st.session_state.messages:
+        if message.get("is_variable_response") and message.get("matched_variables"):
+            matched_vars = message["matched_variables"]
+            for category, variables in matched_vars.items():
+                if category not in all_matched_variables:
+                    all_matched_variables[category] = []
+                all_matched_variables[category].extend(variables)
+    
+    # Display matched variables in sidebar
+    if all_matched_variables:
+        for category, variables in all_matched_variables.items():
+            with st.expander(f"📂 {category} ({len(variables)} variables)"):
+                for var in variables:
+                    st.json(var)
+    else:
+        st.info("No variables selected yet. Use the Variable Selection bot to find relevant variables!")
 
 # App title
 st.title("🤖 HILDA Research Assistant")
@@ -1537,18 +1560,6 @@ for message in st.session_state.messages:
                             st.success(f"Relevance: {relevance}")
                         elif 'somewhat' in relevance.lower():
                             st.warning(f"Relevance: {relevance}")
-        
-        # NEW: Handle variable response display with JSON data
-        if message.get("is_variable_response"):
-            matched_vars = message.get("matched_variables", {})
-            if matched_vars:
-                st.divider()
-                st.subheader("📋 Variable Details from Data Dictionary")
-                
-                for category, variables in matched_vars.items():
-                    with st.expander(f"📂 {category}"):
-                        for var in variables:
-                            st.json(var)
       
 # Chat input
 if prompt := st.chat_input("Type your question..."):
