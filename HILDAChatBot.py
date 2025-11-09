@@ -1288,9 +1288,6 @@ with st.sidebar:
         st.session_state.current_bot = "Methodology"
     if st.button("📊 Variable Selection", use_container_width=True):
         st.session_state.current_bot = "Variable Selection"
-
-   
-    st.divider()
    
     # Display current bot with custom styling
     if st.session_state.current_bot == "Any/All":
