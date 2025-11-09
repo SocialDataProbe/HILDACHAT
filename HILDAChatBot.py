@@ -132,6 +132,37 @@ def fix_encoding(text):
     
     return text
 
+def match_variables_with_dictionary(response_content, json_data):
+    """
+    Extract variable names from the response and match them with the data dictionary.
+    
+    Args:
+        response_content: The formatted response text containing variable names
+        json_data: The complete data dictionary JSON
+    
+    Returns:
+        Dictionary containing matched variables and their full JSON data
+    """
+    import re
+    
+    # Extract variable names from markdown-style headers like ## `variable_name`
+    variable_pattern = r'##\s*`([^`]+)`'
+    variable_names = re.findall(variable_pattern, response_content)
+    
+    matched_data = {}
+    
+    for var_name in variable_names:
+        var_name = var_name.strip()
+        # Search through all categories in the JSON data
+        for category_key, variables_list in json_data.items():
+            for variable in variables_list:
+                if variable.get('variable_name', '').lower() == var_name.lower():
+                    if category_key not in matched_data:
+                        matched_data[category_key] = []
+                    matched_data[category_key].append(variable)
+    
+    return matched_data
+
 ################################################ Fork Functions ################################################
 
 def fork(question):
@@ -1450,12 +1481,17 @@ def process_by_category(prompt, category):
                 variables=variables_str
             )
             
-            responsefinalcat = generate_response(variable_output)  # Replace with your model call
+            responsefinalcat = generate_response(variable_output)
             
-            # Return variable selection response dictionary
+            # NEW: Match variables with the original JSON data
+            matched_variables = match_variables_with_dictionary(responsefinalcat, json_data)
+            
+            # Return variable selection response dictionary WITH matched data
             return {
                 "role": "assistant",
-                "content": responsefinalcat
+                "content": responsefinalcat,
+                "is_variable_response": True,  # NEW FLAG
+                "matched_variables": matched_variables  # NEW DATA
             }
             
         except Exception as e:
@@ -1501,6 +1537,18 @@ for message in st.session_state.messages:
                             st.success(f"Relevance: {relevance}")
                         elif 'somewhat' in relevance.lower():
                             st.warning(f"Relevance: {relevance}")
+        
+        # NEW: Handle variable response display with JSON data
+        if message.get("is_variable_response"):
+            matched_vars = message.get("matched_variables", {})
+            if matched_vars:
+                st.divider()
+                st.subheader("📋 Variable Details from Data Dictionary")
+                
+                for category, variables in matched_vars.items():
+                    with st.expander(f"📂 {category}"):
+                        for var in variables:
+                            st.json(var)
       
 # Chat input
 if prompt := st.chat_input("Type your question..."):
