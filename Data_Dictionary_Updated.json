@@ -47501,7 +47501,7 @@
       "subject_category": "HEALTH - Lifestyle",
       "variable_description": "Sexual Identity",
       "categories_coding": "1 Heterosexual or Straight\n2 Gay or Lesbian\n3 Bisexual\n4 Other\n5 Unsure/dont know\n6 Prefer not to say",
-      "waves": "11, 15, 19",
+      "waves": "12, 16, 20",
       "survey": "SCQ",
       "dataset": "RP",
       "population": "All",
