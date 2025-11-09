@@ -1419,7 +1419,7 @@ def process_by_category(prompt, category):
             "content": final_response
         }
     
-    elif category == "Variable":
+    elif category == "Variable" or category == "Variable Selection":
         # Variable Selection handling flow
         try:
             categories_prompt = categories_review(prompt, categories_summary)
