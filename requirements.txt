@@ -1,5 +1,5 @@
 numpy
 pandas
-streamlit
+streamlit==1.40.1
 google-genai
 voyageai
