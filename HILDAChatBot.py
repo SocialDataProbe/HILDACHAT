@@ -132,6 +132,57 @@ def fix_encoding(text):
     
     return text
 
+def extract_python_list(response):
+    """
+    Extracts a Python list from a response that may contain markdown code blocks.
+    Looks for content wrapped in ```python ... ``` tags.
+    
+    Args:
+        response: String containing the AI response
+        
+    Returns:
+        Parsed Python list
+        
+    Raises:
+        ValueError: If no valid Python list is found or parsing fails
+    """
+    
+    # First, try to find content within ```python ... ``` tags
+    python_block_pattern = r'```python\s*(.*?)\s*```'
+    match = re.search(python_block_pattern, response, re.DOTALL | re.IGNORECASE)
+    
+    if match:
+        code_content = match.group(1).strip()
+    else:
+        # Fallback: try to find any code block with ``` tags
+        code_block_pattern = r'```\s*(.*?)\s*```'
+        match = re.search(code_block_pattern, response, re.DOTALL)
+        
+        if match:
+            code_content = match.group(1).strip()
+        else:
+            # Last resort: try to find a list pattern anywhere in the response
+            list_pattern = r'\[[\s\S]*?\]'
+            matches = re.findall(list_pattern, response)
+            
+            if matches:
+                code_content = matches[-1]  # Take the last match
+            else:
+                raise ValueError("No Python list found in response")
+    
+    # Now try to parse the extracted content
+    try:
+        python_list = ast.literal_eval(code_content)
+        
+        # Verify it's actually a list
+        if not isinstance(python_list, list):
+            raise ValueError(f"Extracted content is not a list: {type(python_list)}")
+        
+        return python_list
+        
+    except (SyntaxError, ValueError) as e:
+        raise ValueError(f"Failed to parse extracted content as Python list: {str(e)}\nContent: {code_content}")
+
 def match_variables_with_dictionary(response_content, json_data):
     """
     Extract variable names from the response and match them with the data dictionary.
@@ -1475,11 +1526,17 @@ def process_by_category(prompt, category):
         try:
             categories_prompt = categories_review(prompt, categories_summary)
             categories_response = generate_response(categories_prompt)
-            
+
+            try:
+                python_list = extract_python_list(categories_response)
+            except ValueError as e:
+                st.error(f"Error extracting categories: {str(e)}")
+                st.error(f"Raw response: {categories_response}")
+        
             # Clean and parse the response
-            clean_string = categories_response.strip("` \npython")
-            python_list = ast.literal_eval(clean_string)
-            print(python_list)
+            #clean_string = categories_response.strip("` \npython")
+            #python_list = ast.literal_eval(clean_string)
+            #print(python_list)
 
             # Filter the JSON data to keep only keys with abbreviations in the list and remove unwanted fields
             excluded_fields = ["population", "constructed_from", "construction_contributes", "notes", "subject_category", "dataset"]
