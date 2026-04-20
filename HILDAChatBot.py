@@ -1395,8 +1395,10 @@ with st.sidebar:
                     
                     # 3. Display the PDF Link (WITH THE FIX)
                     if var.get("link"):
-                        # This fixes the missing slash from your JSON file
-                        fixed_link = var["link"].replace('href="app/static/', 'href="/app/static/')
+                        fixed_link = var["link"].replace(
+                            'href="app/static/',
+                            'href="https://raw.githubusercontent.com/SocialDataProbe/HILDACHAT/main/static/'
+                        )
                         st.markdown(fixed_link, unsafe_allow_html=True)
                     elif var.get("pdf_reference") and var["pdf_reference"].get("filename"):
                         ref = var["pdf_reference"]
