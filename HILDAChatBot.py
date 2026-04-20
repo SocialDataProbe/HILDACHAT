@@ -215,8 +215,7 @@ def match_variables_with_dictionary(response_content, json_data):
     return matched_data
 
 def make_pdf_link(filename, page, label=None):
-    # Notice the leading slash before app/static/
-    url = f"/app/static/{filename}#page={page}"
+    url = f"https://raw.githubusercontent.com/SocialDataProbe/HILDACHAT/main/static/{filename}#page={page}"
     label = label or f"Open {filename} at page {page}"
     return f'<a href="{url}" target="_blank">{label}</a>'
 
