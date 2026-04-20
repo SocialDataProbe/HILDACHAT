@@ -1409,42 +1409,6 @@ with st.sidebar:
     else:
         st.info("No variables selected yet. Use the Variable Selection bot to find relevant variables!")
 
-# --- FINAL DIAGNOSTIC BLOCK ---
-import os
-
-st.sidebar.divider()
-st.sidebar.header("🔍 Final Diagnostic")
-
-test_file = "ContinuingPersonQuestionnaireW21.pdf"
-file_path = os.path.join('static', test_file)
-
-if os.path.exists(file_path):
-    size = os.path.getsize(file_path)
-    st.sidebar.write(f"**File:** `{test_file}`")
-    st.sidebar.write(f"**Size:** `{size / 1024:.2f} KB`")
-    
-    if size < 2:
-        st.sidebar.error("⚠️ ALERT: File is too small! You likely uploaded Git LFS pointers instead of actual PDFs.")
-    
-    # Test if we can read the bytes
-    with open(file_path, "rb") as f:
-        btn = st.sidebar.download_button(
-            label="📥 Test Download PDF",
-            data=f,
-            file_name=test_file,
-            mime="application/pdf"
-        )
-else:
-    st.sidebar.error("File not found")
-
-# Test 3 different URL formats
-st.sidebar.write("**Test these links:**")
-st.sidebar.markdown(f"1. [No leading slash](static/{test_file})")
-st.sidebar.markdown(f"2. [With leading slash](/static/{test_file})")
-st.sidebar.markdown(f"3. [Full Absolute](https://hildachat-lcgcppx96phgkt5bxp5fs9.streamlit.app/static/{test_file})")
-# ------------------------------
-
-
 # App title
 st.title("🤖 HILDA Research Assistant")
 
