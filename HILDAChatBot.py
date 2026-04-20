@@ -1368,6 +1368,27 @@ with st.sidebar:
     st.divider()
     st.header("📋 Variable Details")
     
+    # --- DEBUG BLOCK (Remove later) ---
+    import os
+    st.sidebar.divider()
+    st.sidebar.header("🔧 Debug Info")
+    try:
+        st.sidebar.write(f"**Static Serving Enabled:** `{st.get_option('server.enableStaticServing')}`")
+    except Exception as e:
+        st.sidebar.write(f"**Static Serving Enabled:** Error reading config")
+
+    st.sidebar.write(f"**Does 'static' folder exist?** `{os.path.exists('static')}`")
+
+    if os.path.exists('static'):
+        files = os.listdir('static')
+        st.sidebar.write(f"**Files in 'static':** `{len(files)}`")
+        if len(files) > 0:
+            st.sidebar.write(f"**First few files:** `{files[:3]}`")
+        
+        test_file = "ContinuingPersonQuestionnaireW21.pdf"
+        st.sidebar.write(f"**Is {test_file} there?** `{test_file in files}`")
+    # ----------------------------------
+
     # Collect all matched variables from chat history
     all_matched_variables = {}
     for message in st.session_state.messages:
