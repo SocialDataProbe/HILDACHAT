@@ -214,6 +214,12 @@ def match_variables_with_dictionary(response_content, json_data):
     
     return matched_data
 
+def make_pdf_link(filename, page, label=None):
+    """Generates an HTML link to a specific page of a local PDF."""
+    url = f"app/static/{filename}#page={page}"
+    label = label or f"Open {filename} at page {page}"
+    return f'<a href="{url}" target="_blank">{label}</a>'
+
 ################################################ Fork Functions ################################################
 
 def fork(question):
@@ -1373,13 +1379,30 @@ with st.sidebar:
                 all_matched_variables[category].extend(variables)
     
     # Display matched variables in sidebar
-    if all_matched_variables:
-        for category, variables in all_matched_variables.items():
-            with st.expander(f"📂 {category} ({len(variables)} variables)"):
-                for var in variables:
-                    st.json(var)
-    else:
-        st.info("No variables selected yet. Use the Variable Selection bot to find relevant variables!")
+        if all_matched_variables:
+            for category, variables in all_matched_variables.items():
+                # Optional: Deduplicate variables by name so they don't repeat if matched multiple times
+                unique_vars = {v['variable_name']: v for v in variables if 'variable_name' in v}.values()
+                
+                with st.expander(f"📂 {category} ({len(unique_vars)} variables)"):
+                    for var in unique_vars:
+                        # 1. Display Variable Name and Description
+                        st.markdown(f"**`{var.get('variable_name', 'Unknown')}`** — {var.get('variable_description', 'No description')}")
+                        
+                        # 2. Display the PDF Link
+                        if var.get("link"):
+                            st.markdown(var["link"], unsafe_allow_html=True)
+                        elif var.get("pdf_reference") and var["pdf_reference"].get("filename"):
+                            ref = var["pdf_reference"]
+                            st.markdown(make_pdf_link(ref["filename"], ref.get("page", 1)), unsafe_allow_html=True)
+                        else:
+                            st.caption("_No PDF reference available_")
+                        
+                        # 3. Keep the JSON view hidden inside a nested expander for advanced users
+                        with st.expander("View full metadata"):
+                            st.json(var)
+                            
+                        st.divider() # Adds a visual separator between variables
 
 # App title
 st.title("🤖 HILDA Research Assistant")
