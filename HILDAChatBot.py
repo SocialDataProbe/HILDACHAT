@@ -1378,18 +1378,23 @@ with st.sidebar:
                     all_matched_variables[category] = []
                 all_matched_variables[category].extend(variables)
     
-    # Display matched variables in sidebar
+        # Display matched variables in sidebar
         if all_matched_variables:
             for category, variables in all_matched_variables.items():
-                # Optional: Deduplicate variables by name so they don't repeat if matched multiple times
+                # Deduplicate variables by name
                 unique_vars = {v['variable_name']: v for v in variables if 'variable_name' in v}.values()
                 
                 with st.expander(f"📂 {category} ({len(unique_vars)} variables)"):
                     for var in unique_vars:
                         # 1. Display Variable Name and Description
-                        st.markdown(f"**`{var.get('variable_name', 'Unknown')}`** — {var.get('variable_description', 'No description')}")
+                        st.markdown(f"**`{var.get('variable_name', 'Unknown')}`**")
+                        st.caption(var.get('variable_description', 'No description'))
                         
-                        # 2. Display the PDF Link
+                        # 2. Display key details (matching your test code format)
+                        st.write(f"**Waves:** {var.get('waves', '—')}")
+                        st.write(f"**Survey:** {var.get('survey', '—')} | **Dataset:** {var.get('dataset', '—')}")
+                        
+                        # 3. Display the PDF Link
                         if var.get("link"):
                             st.markdown(var["link"], unsafe_allow_html=True)
                         elif var.get("pdf_reference") and var["pdf_reference"].get("filename"):
@@ -1397,10 +1402,6 @@ with st.sidebar:
                             st.markdown(make_pdf_link(ref["filename"], ref.get("page", 1)), unsafe_allow_html=True)
                         else:
                             st.caption("_No PDF reference available_")
-                        
-                        # 3. Keep the JSON view hidden inside a nested expander for advanced users
-                        with st.expander("View full metadata"):
-                            st.json(var)
                             
                         st.divider() # Adds a visual separator between variables
 
