@@ -220,14 +220,24 @@ def make_pdf_link(filename, page, label=None):
     return f'<a href="{url}" target="_blank">{label}</a>'
 
 
-@st.dialog("📖 Methodology Sources")
-def show_methodology_sources(sources):
-    st.markdown("Here are the sections of the HILDA manual used to answer your question:")
+@st.dialog("📖 Methodology Sources", width="large")
+def show_methodology_sources(sources, full_markdown):
+    st.markdown("### 🎯 Specific Excerpts")
+    st.markdown("These are the specific sections the AI used to generate your answer:")
+    
     for source in sources:
-        st.subheader(source.get("section_title", "Unknown Section"))
-        st.info(f"**Key excerpt:** {source.get('quote', 'No excerpt provided.')}")
-        # Optional: You could also dump the raw markdown section text here 
-        # if you extract it, but showing the LLM's selected quote is very clean.
+        st.subheader(f"📍 {source.get('section_title', 'Unknown Section')}")
+        st.info(f"**Quote:** {source.get('quote', 'No excerpt provided.')}")
+    
+    st.divider()
+    
+    st.markdown("### 📚 Full Chapter Context")
+    st.markdown("Want to read more? Here is the complete text of the referenced chapter(s):")
+    
+    # Creates a scrollable box so the modal doesn't become infinitely long
+    with st.container(height=400, border=True):
+        st.markdown(full_markdown)
+
 
 ################################################ Fork Functions ################################################
 
@@ -1593,21 +1603,17 @@ def process_by_category(prompt, category):
             }
     
     elif category == "Methodology":
-            # Methodology handling flow
-            chapter_prompt = manual_review(prompt, chapter_summary)
-            chap_response = generate_response(chapter_prompt)
-
-            category_match = re.search(r'<category>(\d+)</category>', chap_response)
-            category_number = category_match.group(1) if category_match else "0"
-        
+            # ... [keep the top part of the block exactly the same] ...
             relevant_chapter = generate_document_prompt(category_number)
             review_prompt = chapter_review(prompt, relevant_chapter)
             
-            # Get response and extract JSON
             final_response_text = generate_response(review_prompt) 
             
             try:
                 response_json = extract_json_from_response(final_response_text)
+                
+                # Clean up the prompt prefix so the user just sees the markdown
+                clean_markdown = relevant_chapter.replace("##DOCUMENT CONTENT:\n\n", "")
                 
                 # Return methodology response dictionary
                 return {
@@ -1615,7 +1621,8 @@ def process_by_category(prompt, category):
                     "content": response_json.get("answer", "Error retrieving answer."),
                     "is_methodology_response": True,
                     "methodology_sources": response_json.get("cited_sections", []),
-                    "message_id": str(uuid.uuid4()) # Good practice for unique button keys
+                    "full_markdown": clean_markdown,  # NEW: Save the chapter text
+                    "message_id": str(uuid.uuid4())
                 }
             except Exception as e:
                 return {
@@ -1717,13 +1724,16 @@ for message in st.session_state.messages:
                         elif 'somewhat' in relevance.lower():
                             st.warning(f"Relevance: {relevance}")
 
+        # Handle methodology response display
         if message.get("is_methodology_response"):
             sources = message.get("methodology_sources", [])
-            if sources:
-                # Use the message_id to ensure the button key is unique
+            full_markdown = message.get("full_markdown", "Manual content not available.")
+            
+            if sources or full_markdown:
                 msg_id = message.get("message_id", str(uuid.uuid4()))
                 if st.button("📖 View Manual Sources", key=f"btn_sources_{msg_id}"):
-                    show_methodology_sources(sources)
+                    # Pass both the citations and the full file to the modal
+                    show_methodology_sources(sources, full_markdown)
       
 # Chat input
 if prompt := st.chat_input("Type your question..."):
