@@ -238,7 +238,7 @@ def show_methodology_sources(sources, full_markdown):
     with st.container(height=400, border=True):
         st.markdown(full_markdown)
 
-
+        
 ################################################ Fork Functions ################################################
 
 def fork(question):
@@ -1603,7 +1603,13 @@ def process_by_category(prompt, category):
             }
     
     elif category == "Methodology":
-            # ... [keep the top part of the block exactly the same] ...
+            # Methodology handling flow
+            chapter_prompt = manual_review(prompt, chapter_summary)
+            chap_response = generate_response(chapter_prompt)
+
+            category_match = re.search(r'<category>(\d+)</category>', chap_response)
+            category_number = category_match.group(1) if category_match else "0"
+                    
             relevant_chapter = generate_document_prompt(category_number)
             review_prompt = chapter_review(prompt, relevant_chapter)
             
