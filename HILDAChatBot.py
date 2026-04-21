@@ -219,6 +219,16 @@ def make_pdf_link(filename, page, label=None):
     label = label or f"Open {filename} at page {page}"
     return f'<a href="{url}" target="_blank">{label}</a>'
 
+
+@st.dialog("📖 Methodology Sources")
+def show_methodology_sources(sources):
+    st.markdown("Here are the sections of the HILDA manual used to answer your question:")
+    for source in sources:
+        st.subheader(source.get("section_title", "Unknown Section"))
+        st.info(f"**Key excerpt:** {source.get('quote', 'No excerpt provided.')}")
+        # Optional: You could also dump the raw markdown section text here 
+        # if you extract it, but showing the LLM's selected quote is very clean.
+
 ################################################ Fork Functions ################################################
 
 def fork(question):
@@ -812,6 +822,56 @@ def chapter_review(question, chapter):
     """)
     return chapter_review_template.replace("{{QUESTION}}", question).replace("{{CHAPTER}}", chapter)
 
+
+def chapter_review(question, chapter):
+    chapter_review_template = textwrap.dedent("""
+    Your task is to use the following chapter from the HILDA user manual to answer the user's question.
+
+    Here is the chapter from the HILDA user manual please read it carefully:
+    <chapter>
+        {{CHAPTER}}
+    </chapter>
+
+    Here is user's question:
+    <question>
+        {{QUESTION}}
+    </question>
+                                            
+    Again, your task is to use the chapter to answer the user's question.
+    You can only base your responses with the content provided in the chapter, do not use any outside knowledge.
+    
+    # OUTPUT FORMAT
+    You must provide your final answer STRICTLY as a single JSON object. Do not include any text outside the JSON block.
+    
+    Example JSON format:
+    ```json
+    {
+        "answer": "String: Your comprehensive answer to the user's question based on the text.",
+        "cited_sections": [
+            {
+                "section_title": "String: The title/number of the specific section you used (e.g., '6.2 Missing Income Data')",
+                "quote": "String: A direct, relevant quote from the manual that supports your answer."
+            }
+        ]
+    }
+    ```
+    
+    If you're unable to answer the user's question with the chapter's content, return this JSON:
+    ```json
+    {
+        "answer": "I do not have the information to answer this question based on the provided manual. Please reach out to the HILDA team at: hilda-inquiries@unimelb.edu.au.",
+        "cited_sections": []
+    }
+    ```
+
+    Here is some extra context you can apply if the user discusses weights: 
+        1. Cross-sectional weights are designed to make each wave's sample representative of the Australian population at that point in time. They account for sample design, non-response, and are benchmarked to known population totals for each specific year.
+        2. Longitudinal weights are primarily designed for analyzing changes at the individual level across multiple waves. They're constructed to represent the original population at the beginning of the longitudinal period, not the current population in each wave.
+        3. When analysing national representative over time, you're essentially creating a series of representative snapshots of Australia at different points in time, not tracking the same individuals across time.          
+        4. Australia's population changes over time due to births, deaths, immigration, and emigration. Cross-sectional weights account for these population changes, while longitudinal weights represent a fixed initial population.                                                  
+                                                
+    """)
+    return chapter_review_template.replace("{{QUESTION}}", question).replace("{{CHAPTER}}", chapter)
 
 ################################################ Variable Selection Functions ################################################
 
@@ -1533,23 +1593,36 @@ def process_by_category(prompt, category):
             }
     
     elif category == "Methodology":
-        # Methodology handling flow
-        chapter_prompt = manual_review(prompt, chapter_summary)
-        chap_response = generate_response(chapter_prompt)  # Replace with your model call
+            # Methodology handling flow
+            chapter_prompt = manual_review(prompt, chapter_summary)
+            chap_response = generate_response(chapter_prompt)
 
-        category_match = re.search(r'<category>(\d+)</category>', chap_response)
-        category_number = category_match.group(1) if category_match else "0"
-       
-        relevant_chapter = generate_document_prompt(category_number)
-        review_prompt = chapter_review(prompt, relevant_chapter)
-        final_response = generate_response(review_prompt)  # Replace with your model call
-       
-        # Return methodology response dictionary
-        return {
-            "role": "assistant",
-            "content": final_response
-        }
-    
+            category_match = re.search(r'<category>(\d+)</category>', chap_response)
+            category_number = category_match.group(1) if category_match else "0"
+        
+            relevant_chapter = generate_document_prompt(category_number)
+            review_prompt = chapter_review(prompt, relevant_chapter)
+            
+            # Get response and extract JSON
+            final_response_text = generate_response(review_prompt) 
+            
+            try:
+                response_json = extract_json_from_response(final_response_text)
+                
+                # Return methodology response dictionary
+                return {
+                    "role": "assistant",
+                    "content": response_json.get("answer", "Error retrieving answer."),
+                    "is_methodology_response": True,
+                    "methodology_sources": response_json.get("cited_sections", []),
+                    "message_id": str(uuid.uuid4()) # Good practice for unique button keys
+                }
+            except Exception as e:
+                return {
+                    "role": "assistant",
+                    "content": f"I encountered an error parsing the methodology manual: {str(e)}"
+                }
+        
     elif category == "Variable" or category == "Variable Selection":
         # Variable Selection handling flow
         try:
@@ -1643,6 +1716,14 @@ for message in st.session_state.messages:
                             st.success(f"Relevance: {relevance}")
                         elif 'somewhat' in relevance.lower():
                             st.warning(f"Relevance: {relevance}")
+
+        if message.get("is_methodology_response"):
+            sources = message.get("methodology_sources", [])
+            if sources:
+                # Use the message_id to ensure the button key is unique
+                msg_id = message.get("message_id", str(uuid.uuid4()))
+                if st.button("📖 View Manual Sources", key=f"btn_sources_{msg_id}"):
+                    show_methodology_sources(sources)
       
 # Chat input
 if prompt := st.chat_input("Type your question..."):
