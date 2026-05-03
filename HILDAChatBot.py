@@ -54,6 +54,12 @@ st.markdown("""
     border-left: 4px solid #6366f1;
     margin: 10px 0;
 }
+            
+/* Make the Methodology pop-up dialog wider */
+div[data-testid="stDialog"] > div {
+    max-width: 85vw !important;
+    width: 85vw !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -1460,10 +1466,27 @@ with st.sidebar:
                     st.caption(var.get('variable_description', 'No description'))
                     
                     # 2. Display key details
+                    st.write(f"**Subject Category:** {var.get('subject_category', '—')}")
                     st.write(f"**Waves:** {var.get('waves', '—')}")
                     st.write(f"**Survey:** {var.get('survey', '—')} | **Dataset:** {var.get('dataset', '—')}")
                     
-                    # 3. Display the PDF Link (WITH THE FIX)
+                    # 3. Display Conditional Details (Only show if they are not null/empty)
+                    if var.get('categories_coding'):
+                        st.write(f"**Categories/Coding:** {var.get('categories_coding')}")
+                        
+                    if var.get('population'):
+                        st.write(f"**Population:** {var.get('population')}")
+                        
+                    if var.get('constructed_from'):
+                        st.write(f"**Constructed From:** {var.get('constructed_from')}")
+                        
+                    if var.get('construction_contributes'):
+                        st.write(f"**Contributes To:** {var.get('construction_contributes')}")
+                        
+                    if var.get('notes'):
+                        st.write(f"**Notes:** {var.get('notes')}")
+                    
+                    # 4. Display the PDF Link (Keeping your existing fix)
                     if var.get("link"):
                         fixed_link = var["link"].replace(
                             'href="app/static/',
