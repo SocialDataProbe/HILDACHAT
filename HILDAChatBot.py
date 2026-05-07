@@ -69,7 +69,7 @@ client = genai.Client(api_key=st.secrets["genai"]["api_key"])
 vo = voyageai.Client(api_key=st.secrets["voyageai"]["api_key"])
 
 # Load the item correspondance data from a file 
-with open('Data_Dictionary_Updated.json', 'r') as f:
+with open('Data_Dictionary_Final.json', 'r') as f:
     json_data = json.load(f)
 
 
@@ -1498,6 +1498,23 @@ with st.sidebar:
                         st.markdown(make_pdf_link(ref["filename"], ref.get("page", 1)), unsafe_allow_html=True)
                     else:
                         st.caption("_No PDF reference available_")
+                    # 5. Display Crafted Variables
+                    crafted_vars = var.get("crafted_variables", [])
+                    if crafted_vars:
+                        st.markdown("#### Crafted Variables")
+                        for c_var in crafted_vars:
+                            # Use an expander for each crafted variable to keep the UI clean
+                            with st.expander(f"`{c_var.get('variable_name', 'Unknown')}`"):
+                                st.write(f"**Description:** {c_var.get('variable_description', '—')}")
+                                if c_var.get('categories_coding'):
+                                    st.write(f"**Categories/Coding:** {c_var.get('categories_coding')}")
+                                if c_var.get('waves'):
+                                    st.write(f"**Waves:** {c_var.get('waves')}")
+                                if c_var.get('constructed_from'):
+                                    st.write(f"**Constructed From:** {c_var.get('constructed_from')}")
+                                if c_var.get('stata_code'):
+                                    st.markdown("**Stata Code:**")
+                                    st.markdown(c_var.get('stata_code'))
                         
                     st.divider() # Adds a visual separator between variables
     else:
