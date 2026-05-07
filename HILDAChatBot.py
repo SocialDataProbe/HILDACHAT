@@ -1501,20 +1501,27 @@ with st.sidebar:
                     # 5. Display Crafted Variables
                     crafted_vars = var.get("crafted_variables", [])
                     if crafted_vars:
-                        st.markdown("#### 🛠️ Crafted Variables")
+                        st.markdown("---") # Visual separator from main variable
+                        st.markdown("#### Crafted Variables")
                         for c_var in crafted_vars:
-                            # Use an expander for each crafted variable to keep the UI clean
-                            with st.expander(f"`{c_var.get('variable_name', 'Unknown')}`"):
-                                st.write(f"**Description:** {c_var.get('variable_description', '—')}")
-                                if c_var.get('categories_coding'):
-                                    st.write(f"**Categories/Coding:** {c_var.get('categories_coding')}")
-                                if c_var.get('waves'):
-                                    st.write(f"**Waves:** {c_var.get('waves')}")
-                                if c_var.get('constructed_from'):
-                                    st.write(f"**Constructed From:** {c_var.get('constructed_from')}")
-                                if c_var.get('stata_code'):
-                                    st.markdown("**Stata Code:**")
-                                    st.markdown(c_var.get('stata_code'))
+                            # Use bold labels and indented formatting instead of expanders
+                            st.markdown(f"**Variable:** `{c_var.get('variable_name', 'Unknown')}`")
+                            st.write(f"**Description:** {c_var.get('variable_description', '—')}")
+                            
+                            if c_var.get('categories_coding'):
+                                st.write(f"**Categories/Coding:** {c_var.get('categories_coding')}")
+                            
+                            if c_var.get('waves'):
+                                st.write(f"**Waves:** {c_var.get('waves')}")
+                                
+                            if c_var.get('constructed_from'):
+                                st.write(f"**Constructed From:** {c_var.get('constructed_from')}")
+                                
+                            if c_var.get('stata_code'):
+                                st.markdown("**Stata Code:**")
+                                st.markdown(c_var.get('stata_code'))
+                            
+                            st.markdown("---") # Separator between individual crafted variables
                         
                     st.divider() # Adds a visual separator between variables
     else:
